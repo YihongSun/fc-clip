@@ -133,8 +133,8 @@ class FCCLIP(nn.Module):
         self.test_text_classifier = None
         self.void_embedding = nn.Embedding(1, backbone.dim_latent) # use this for void
 
-        _, self.train_num_templates, self.train_class_names = self.prepare_class_names_from_metadata(train_metadata, train_metadata)
-        self.category_overlapping_mask, self.test_num_templates, self.test_class_names = self.prepare_class_names_from_metadata(test_metadata, train_metadata)
+        # _, self.train_num_templates, self.train_class_names = self.prepare_class_names_from_metadata(train_metadata, train_metadata)
+        # self.category_overlapping_mask, self.test_num_templates, self.test_class_names = self.prepare_class_names_from_metadata(test_metadata, train_metadata)
 
     def prepare_class_names_from_metadata(self, metadata, train_metadata):
         def split_labels(x):
@@ -289,6 +289,50 @@ class FCCLIP(nn.Module):
     @property
     def device(self):
         return self.pixel_mean.device
+
+    def forward_feature(self, batched_inputs):
+        """
+        Args:
+            batched_inputs: a list, batched outputs of :class:`DatasetMapper`.
+                Each item in the list contains the inputs for one image.
+                For now, each item in the list is a dict that contains:
+                   * "image": Tensor, image in (C, H, W) format.
+                   * "instances": per-region ground truth
+                   * Other information that's included in the original dicts, such as:
+                     "height", "width" (int): the output resolution of the model (may be different
+                     from input resolution), used in inference.
+        Returns:
+            list[dict]:
+                each dict has the results for one image. The dict contains the following keys:
+                * "pooled_clip_feature": the pooled clip feature for the image
+                * "logit_scale": the logit scale for the image
+                * "mask_for_pooling": the mask for pooling
+        """
+
+        assert not self.training
+
+        images = [x["image"].to(self.device) for x in batched_inputs]
+        images = [(x - self.pixel_mean) / self.pixel_std for x in images]
+        images = ImageList.from_tensors(images, self.size_divisibility)
+
+        features = self.backbone(images.tensor)
+        masks = [torch.tensor(x["masks"]).to(self.device) for x in batched_inputs]
+        mask_pred_results = torch.stack(masks).type(torch.float32) * 2 - 1
+        clip_feature = features["clip_vis_dense"]
+        mask_for_pooling = F.interpolate(mask_pred_results, size=clip_feature.shape[-2:],
+                                            mode='bilinear', align_corners=False)
+        if "convnext" in self.backbone.model_name.lower():
+            pooled_clip_feature = self.mask_pooling(clip_feature, mask_for_pooling)
+            pooled_clip_feature = self.backbone.visual_prediction_forward(pooled_clip_feature)
+        elif "rn" in self.backbone.model_name.lower():
+            pooled_clip_feature = self.backbone.visual_prediction_forward(clip_feature, mask_for_pooling)
+        else:
+            raise NotImplementedError
+        return [{
+            'pooled_clip_feature' : pooled_clip_feature, 
+            'logit_scale': self.backbone.clip_model.logit_scale.item(), 
+            'mask_for_pooling': mask_for_pooling
+        }]
 
     def forward(self, batched_inputs):
         """

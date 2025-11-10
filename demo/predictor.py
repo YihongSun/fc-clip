@@ -104,40 +104,40 @@ class VisualizationDemo(object):
                 Useful since the visualization logic can be slow.
         """
 
-        coco_metadata = MetadataCatalog.get("openvocab_coco_2017_val_panoptic_with_sem_seg")
-        ade20k_metadata = MetadataCatalog.get("openvocab_ade20k_panoptic_val")
-        lvis_classes = open("./fcclip/data/datasets/lvis_1203_with_prompt_eng.txt", 'r').read().splitlines()
-        lvis_classes = [x[x.find(':')+1:] for x in lvis_classes]
-        lvis_colors = list(
-            itertools.islice(itertools.cycle(coco_metadata.stuff_colors), len(lvis_classes))
-        )
-        # rerrange to thing_classes, stuff_classes
-        coco_thing_classes = coco_metadata.thing_classes
-        coco_stuff_classes = [x for x in coco_metadata.stuff_classes if x not in coco_thing_classes]
-        coco_thing_colors = coco_metadata.thing_colors
-        coco_stuff_colors = [x for x in coco_metadata.stuff_colors if x not in coco_thing_colors]
-        ade20k_thing_classes = ade20k_metadata.thing_classes
-        ade20k_stuff_classes = [x for x in ade20k_metadata.stuff_classes if x not in ade20k_thing_classes]
-        ade20k_thing_colors = ade20k_metadata.thing_colors
-        ade20k_stuff_colors = [x for x in ade20k_metadata.stuff_colors if x not in ade20k_thing_colors]
+        # coco_metadata = MetadataCatalog.get("openvocab_coco_2017_val_panoptic_with_sem_seg")
+        # ade20k_metadata = MetadataCatalog.get("openvocab_ade20k_panoptic_val")
+        # lvis_classes = open("./fcclip/data/datasets/lvis_1203_with_prompt_eng.txt", 'r').read().splitlines()
+        # lvis_classes = [x[x.find(':')+1:] for x in lvis_classes]
+        # lvis_colors = list(
+        #     itertools.islice(itertools.cycle(coco_metadata.stuff_colors), len(lvis_classes))
+        # )
+        # # rerrange to thing_classes, stuff_classes
+        # coco_thing_classes = coco_metadata.thing_classes
+        # coco_stuff_classes = [x for x in coco_metadata.stuff_classes if x not in coco_thing_classes]
+        # coco_thing_colors = coco_metadata.thing_colors
+        # coco_stuff_colors = [x for x in coco_metadata.stuff_colors if x not in coco_thing_colors]
+        # ade20k_thing_classes = ade20k_metadata.thing_classes
+        # ade20k_stuff_classes = [x for x in ade20k_metadata.stuff_classes if x not in ade20k_thing_classes]
+        # ade20k_thing_colors = ade20k_metadata.thing_colors
+        # ade20k_stuff_colors = [x for x in ade20k_metadata.stuff_colors if x not in ade20k_thing_colors]
 
-        user_classes = []
-        user_colors = [random_color(rgb=True, maximum=1) for _ in range(len(user_classes))]
+        # user_classes = []
+        # user_colors = [random_color(rgb=True, maximum=1) for _ in range(len(user_classes))]
 
-        stuff_classes = coco_stuff_classes + ade20k_stuff_classes
-        stuff_colors = coco_stuff_colors + ade20k_stuff_colors
-        thing_classes = user_classes + coco_thing_classes + ade20k_thing_classes + lvis_classes
-        thing_colors = user_colors + coco_thing_colors + ade20k_thing_colors + lvis_colors
+        # stuff_classes = coco_stuff_classes + ade20k_stuff_classes
+        # stuff_colors = coco_stuff_colors + ade20k_stuff_colors
+        # thing_classes = user_classes + coco_thing_classes + ade20k_thing_classes + lvis_classes
+        # thing_colors = user_colors + coco_thing_colors + ade20k_thing_colors + lvis_colors
 
-        thing_dataset_id_to_contiguous_id = {x: x for x in range(len(thing_classes))}
-        DatasetCatalog.register(
-            "openvocab_dataset", lambda x: []
-        )
-        self.metadata = MetadataCatalog.get("openvocab_dataset").set(
-            stuff_classes=thing_classes+stuff_classes,
-            stuff_colors=thing_colors+stuff_colors,
-            thing_dataset_id_to_contiguous_id=thing_dataset_id_to_contiguous_id,
-        )
+        # thing_dataset_id_to_contiguous_id = {x: x for x in range(len(thing_classes))}
+        # DatasetCatalog.register(
+        #     "openvocab_dataset", lambda x: []
+        # )
+        # self.metadata = MetadataCatalog.get("openvocab_dataset").set(
+        #     stuff_classes=thing_classes+stuff_classes,
+        #     stuff_colors=thing_colors+stuff_colors,
+        #     thing_dataset_id_to_contiguous_id=thing_dataset_id_to_contiguous_id,
+        # )
         #print("self.metadata:", self.metadata)
         self.cpu_device = torch.device("cpu")
         self.instance_mode = instance_mode
@@ -148,7 +148,7 @@ class VisualizationDemo(object):
             self.predictor = AsyncPredictor(cfg, num_gpus=num_gpu)
         else:
             self.predictor = DefaultPredictor(cfg)
-        self.predictor.set_metadata(self.metadata)
+        # self.predictor.set_metadata(self.metadata)
 
     def run_on_image(self, image):
         """
